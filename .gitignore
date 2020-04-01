@@ -15,6 +15,7 @@ jspm_packages/
 
 # misc
 .DS_Store
+nodemon.json
 
 # Logs
 logs
