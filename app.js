@@ -1,6 +1,10 @@
 const express = require('express');
 const graphqlHttp = require('express-graphql');
 const { buildSchema } = require('graphql');
+const mongoose = require('mongoose');
+const { PORT, MONGODB_URI } = process.env;
+
+const Event = require('./models/event');
 
 const app = express();
 
@@ -40,21 +44,57 @@ app.use('/graphql', graphqlHttp({
   `),
   rootValue: {
     events: () => {
-      return events;
+      return Event.find().then(events => {
+        return events.map(event => {
+          return {...event._doc};
+          // If the _id field throws an arror, override the original by converting it to a string:
+          // return {...event._doc, _id: event._doc._id.toString() };
+          // Or, use the id field added by mongoose:
+          // return {...event._doc, _id: event.id };
+
+        });
+      }).catch(err => { throw err; });
     },
     createEvent: (args) => {
-      const event = {
-        _id: Math.random().toString(),
+      const event = new Event({
         title: args.eventInput.title,
         description: args.eventInput.description,
         price: +args.eventInput.price,
-        date: args.eventInput.date
-      }
-      events.push(event);
-      return event;
+        date: new Date(args.eventInput.date)
+      });
+      return event
+        .save()
+        .then(result => {
+          console.log(result);
+          return {...result._doc};
+          // If the _id field throws an arror, override the original by converting it to a string:
+          // return {...event._doc, _id: event._doc._id.toString() };
+          // Or, use the id field added by mongoose:
+          // return {...event._doc, _id: event.id };
+        })
+        .catch(err => {
+          console.log(err);
+          throw err;
+        });
     }
   },
   graphiql: true
 }));
 
-app.listen(3000);
+
+
+mongoose.set('useNewUrlParser', true);
+mongoose.set('useUnifiedTopology', true);
+
+mongoose
+  .connect(MONGODB_URI)
+  .then(() => {
+    console.log('Database connected');
+    app.listen(PORT || 3000, function () { 
+      console.log(`Listening on port ${this.address().port}`);
+    });
+  })
+  .catch(err => {
+    console.log(err);
+  });
+
