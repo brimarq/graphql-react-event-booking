@@ -10,9 +10,49 @@ const User = require('./models/user');
 
 const app = express();
 
-const events = [];
 
 app.use(express.json());
+
+/** More flexible 'manual' population for db queries:
+ * In addition to retrieving primitives, GraphQL can call functions in queries and 
+ * return their results. This way also allows for more complex/compond queries that 
+ * avoid possible infinite loops, because the functions aren't called unless that data
+ * is specifically requested.
+ */
+
+const events = eventIds => {
+  return Event
+    .find({ _id: { $in: eventIds } })
+    .then(events => {
+      return events.map(event => {
+        return {...event._doc, creator: user.bind(this, event.creator) };
+        /** If the retuned _id field throws an arror, override the original by:
+         * converting it to a string, e.g.: return {...event._doc, _id: event._doc._id.toString() };
+         * OR, using the id field added by mongoose, e.g.: return {...event._doc, _id: event.id };
+         */
+        // return {...event._doc, _id: event.id, creator: user.bind(this, event.creator) };
+      })
+    })
+    .catch(errr => {
+      throw err;
+    })
+};
+
+const user = userId => {
+  return User
+    .findById(userId)
+    .then(user => {
+      return {...user._doc, createdEvents: events.bind(this, user._doc.createdEvents) };
+      /** If the retuned _id field throws an arror, override the original by:
+       * converting it to a string, e.g.: return {...user._doc, _id: user._doc._id.toString() };
+       * OR, using the id field added by mongoose, e.g.: return {...user._doc, _id: user.id };
+       */
+      // return {...user._doc, _id: user.id, createdEvents: events.bind(this, user._doc.createdEvents) };
+    })
+    .catch(err => {
+      throw err;
+    })
+};
 
 app.use('/graphql', graphqlHttp({
   schema: buildSchema(`
@@ -63,24 +103,17 @@ app.use('/graphql', graphqlHttp({
   rootValue: {
     events: () => {
       // Always `return` if async so graphql knows to wait for promise to resolve
-      return Event.find()
-        .populate('creator')
+      return Event
+        .find()
         .then(events => {
           return events.map(event => {
-            return {...event._doc}; 
-
-            /** If the _id field throws an arror, override the original by:
-             * converting it to a string, e.g.: return {...event._doc, _id: event._doc._id.toString() };
-             * OR, using the id field added by mongoose, e.g.: return {...event._doc, _id: event.id };
-             */
-            // return {
-            //   ...event._doc,
-            //   _id: event.id,
-            //   creator: {
-            //     ...event._doc.creator._doc,
-            //     _id: event._doc.creator.id
-            //   }
-            // };
+            // return {...event._doc}; 
+            return {
+              ...event._doc,
+              _id: event.id,
+              // bind user func (from above) so that event._doc.creator is passed in as the arg
+              creator: user.bind(this, event._doc.creator)
+            };
           });
         })
         .catch(err => { 
@@ -100,7 +133,7 @@ app.use('/graphql', graphqlHttp({
       return event
         .save()
         .then(result => {
-          createdEvent = {...result._doc, _id: result.id};
+          createdEvent = {...result._doc, _id: result.id, creator: user.bind(this, result._doc.creator) };
           return User.findById('5e868aab8197c91a08815bfa');
         })
         .then(user => {
