@@ -22,6 +22,7 @@ app.use('/graphql', graphqlHttp({
       description: String!
       price: Float!
       date: String!
+      creator: User!
     }
 
     type User {
@@ -29,6 +30,7 @@ app.use('/graphql', graphqlHttp({
       email: String!
       # password is nullable here - don't want to retrieve it in queries
       password: String
+      createdEvents: [Event!]
     }
 
     input EventInput {
