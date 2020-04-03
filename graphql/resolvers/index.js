@@ -16,7 +16,7 @@ const events = eventIds => {
     .find({ _id: { $in: eventIds } })
     .then(events => {
       return events.map(event => {
-        return {...event._doc, creator: user.bind(this, event.creator) };
+        return {...event._doc, date: new Date(event._doc.date).toISOString(), creator: user.bind(this, event.creator) };
         /** If the retuned _id field throws an arror, override the original by:
          * converting it to a string, e.g.: return {...event._doc, _id: event._doc._id.toString() };
          * OR, using the id field added by mongoose, e.g.: return {...event._doc, _id: event.id };
@@ -56,6 +56,7 @@ module.exports = {
           return {
             ...event._doc,
             _id: event.id,
+            date: new Date(event._doc.date).toISOString(),
             // bind user func (from above) so that event._doc.creator is passed in as the arg
             creator: user.bind(this, event._doc.creator)
           };
@@ -78,7 +79,12 @@ module.exports = {
     return event
       .save()
       .then(result => {
-        createdEvent = {...result._doc, _id: result.id, creator: user.bind(this, result._doc.creator) };
+        createdEvent = {
+          ...result._doc, 
+          _id: result.id, 
+          date: new Date(event._doc.date).toISOString(),
+          creator: user.bind(this, result._doc.creator) 
+        };
         return User.findById('5e868aab8197c91a08815bfa');
       })
       .then(user => {
