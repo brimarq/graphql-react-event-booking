@@ -63,16 +63,29 @@ app.use('/graphql', graphqlHttp({
   rootValue: {
     events: () => {
       // Always `return` if async so graphql knows to wait for promise to resolve
-      return Event.find().then(events => {
-        return events.map(event => {
-          return {...event._doc};
-          // If the _id field throws an arror, override the original by converting it to a string:
-          // return {...event._doc, _id: event._doc._id.toString() };
-          // Or, use the id field added by mongoose:
-          // return {...event._doc, _id: event.id };
+      return Event.find()
+        .populate('creator')
+        .then(events => {
+          return events.map(event => {
+            return {...event._doc}; 
 
+            /** If the _id field throws an arror, override the original by:
+             * converting it to a string, e.g.: return {...event._doc, _id: event._doc._id.toString() };
+             * OR, using the id field added by mongoose, e.g.: return {...event._doc, _id: event.id };
+             */
+            // return {
+            //   ...event._doc,
+            //   _id: event.id,
+            //   creator: {
+            //     ...event._doc.creator._doc,
+            //     _id: event._doc.creator.id
+            //   }
+            // };
+          });
+        })
+        .catch(err => { 
+          throw err; 
         });
-      }).catch(err => { throw err; });
     },
     createEvent: (args) => {
       const event = new Event({
