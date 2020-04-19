@@ -11,15 +11,22 @@ const { dateToString } = require('../../helpers/date');
  * OR, using the id field added by mongoose, e.g.: return {...event._doc, _id: event.id };
  */
 // return {...event._doc, _id: event.id, creator: user.bind(this, event.creator) };
-const transformEvent = event => {
-  return {
-    ...event._doc, 
-    _id: event.id,
-    date: dateToString(event._doc.date), 
-    // bind user function so that event._doc.creator is passed in as the arg
-    creator: user.bind(this, event.creator) 
-  };
-};
+const transformEvent = event => ({
+  ...event._doc, 
+  _id: event.id,
+  date: dateToString(event._doc.date), 
+  // bind user function so that event._doc.creator is passed in as the arg
+  creator: user.bind(this, event.creator) 
+});
+
+const transformBooking = booking => ({
+  ...booking._doc, 
+  _id: booking.id, 
+  user: user.bind(this, booking._doc.user),
+  event: singleEvent.bind(this, booking._doc.event),
+  createdAt: dateToString(booking._doc.createdAt),
+  updatedAt: dateToString(booking._doc.updatedAt) 
+});
 
 /** Max says this is a more flexible 'manual' population for db queries:
  * In addition to retrieving primitives, GraphQL can call functions in queries and 
@@ -75,16 +82,7 @@ module.exports = {
   bookings: async () => {
     try {
       const bookings = await Booking.find();
-      return bookings.map(booking => {
-        return { 
-          ...booking._doc, 
-          _id: booking.id, 
-          user: user.bind(this, booking._doc.user),
-          event: singleEvent.bind(this, booking._doc.event),
-          createdAt: dateToString(booking._doc.createdAt),
-          updatedAt: dateToString(booking._doc.updatedAt) 
-        };
-      })
+      return bookings.map(booking => transformBooking(booking));
     } catch(err) {
       throw err;
     }
@@ -145,14 +143,7 @@ module.exports = {
         event: fetchedEvent
       });
       const result = await booking.save();
-      return { 
-        ...result._doc, 
-        _id: result.id, 
-        user: user.bind(this, result._doc.user),
-        event: singleEvent.bind(this, result._doc.event),
-        createdAt: dateToString(result._doc.createdAt),
-        updatedAt: dateToString(result._doc.updatedAt) 
-      };
+      return transformBooking(result);
     } catch (err) { 
       throw err; 
     }
