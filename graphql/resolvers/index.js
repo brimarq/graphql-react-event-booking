@@ -5,6 +5,21 @@ const User = require('../../models/user');
 const Booking = require('../../models/booking');
 
 
+/** If the retuned _id field throws an arror, override the original by:
+ * converting it to a string, e.g.: return {...event._doc, _id: event._doc._id.toString() };
+ * OR, using the id field added by mongoose, e.g.: return {...event._doc, _id: event.id };
+ */
+// return {...event._doc, _id: event.id, creator: user.bind(this, event.creator) };
+const transformEvent = event => {
+  return {
+    ...event._doc, 
+    _id: event.id,
+    date: new Date(event._doc.date).toISOString(), 
+    // bind user function so that event._doc.creator is passed in as the arg
+    creator: user.bind(this, event.creator) 
+  };
+};
+
 /** Max says this is a more flexible 'manual' population for db queries:
  * In addition to retrieving primitives, GraphQL can call functions in queries and 
  * return their results. This way also allows for more complex/compond queries that 
@@ -18,14 +33,7 @@ const Booking = require('../../models/booking');
 const events = async eventIds => {
   try {
     const events = await Event.find({ _id: { $in: eventIds } });
-    return events.map(event => {
-      return {...event._doc, date: new Date(event._doc.date).toISOString(), creator: user.bind(this, event.creator) };
-      /** If the retuned _id field throws an arror, override the original by:
-       * converting it to a string, e.g.: return {...event._doc, _id: event._doc._id.toString() };
-       * OR, using the id field added by mongoose, e.g.: return {...event._doc, _id: event.id };
-       */
-      // return {...event._doc, _id: event.id, creator: user.bind(this, event.creator) };
-    });
+    return events.map(event => transformEvent(event));
   } catch (err) {
     throw err;
   }
@@ -34,11 +42,7 @@ const events = async eventIds => {
 const singleEvent = async eventId => {
   try {
     const event = await Event.findById(eventId);
-    return { 
-      ...event._doc, 
-      _id: event.id,
-      creator: user.bind(this, event.creator)
-    };
+    return transformEvent(event);
   } catch (err) {
     throw err;
   }
@@ -62,16 +66,7 @@ module.exports = {
   events: async () => {
     try {
       const events = await Event.find();
-      return events.map(event => {
-        // return {...event._doc}; 
-        return {
-          ...event._doc,
-          _id: event.id,
-          date: new Date(event._doc.date).toISOString(),
-          // bind user func (from above) so that event._doc.creator is passed in as the arg
-          creator: user.bind(this, event._doc.creator)
-        };
-      });
+      return events.map(event => transformEvent(event));
     } catch (err) {
       throw err;
     }
@@ -105,12 +100,7 @@ module.exports = {
 
       let createdEvent;
       const result = await event.save();
-      createdEvent = {
-        ...result._doc, 
-        _id: result.id, 
-        date: new Date(event._doc.date).toISOString(),
-        creator: user.bind(this, result._doc.creator) 
-      };
+      createdEvent = transformEvent(result);
 
       const creator = await User.findById('5e868aab8197c91a08815bfa');
       if (!creator) {
@@ -169,11 +159,7 @@ module.exports = {
   cancelBooking: async args => {
     try {
       const booking = await Booking.findById(args.bookingId).populate('event');
-      const event = {
-        ...booking.event._doc,
-        _id: booking.event.id,
-        creator: user.bind(this, booking.event._doc.creator)
-      };
+      const event = transformEvent(booking.event);
       await Booking.deleteOne({ _id: args.bookingId });
       return event;
     } catch (err) { 
