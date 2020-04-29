@@ -26,7 +26,7 @@ mongoose
   .connect(MONGODB_URI)
   .then(() => {
     console.log('Database connected');
-    app.listen(PORT || 3000, function () { 
+    app.listen(PORT || 8000, function () { 
       console.log(`Listening on port ${this.address().port}`);
     });
   })
