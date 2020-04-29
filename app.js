@@ -11,6 +11,20 @@ const app = express();
 
 app.use(express.json());
 
+// Set CORS policy
+app.use((req, res, next) => {
+  // Because this is an API, allow requests from anywhere.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Browsers automatically send an OPTIONS req before a POST req, to see what options are available.
+  res.setHeader('Access-Control-Allow-Methods', 'POST,GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Respond to OPTIONS req, which cannot be handled by the graphql endpoint
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(isAuth);
 
 app.use('/graphql', graphqlHttp({
