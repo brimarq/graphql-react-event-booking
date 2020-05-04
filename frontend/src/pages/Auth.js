@@ -70,6 +70,7 @@ class AuthPage extends Component {
       return res.json();
     })
     .then(resData => {
+      // Set context with resData info if token is present
       if (resData.data.login.token) {
         this.context.login(
           resData.data.login.token,
