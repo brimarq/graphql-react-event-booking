@@ -38,10 +38,15 @@ class App extends Component {
             <MainNavigation />
             <main className="main-content">
               <Switch>
-                <Redirect from="/" to="/auth" exact />
-                <Route path="/auth" component={AuthPage} />
+                {/* Only redirect/allow auth page if there's no token */}
+                {!this.state.token && <Redirect from="/" to="/auth" exact />}
+                {!this.state.token && <Route path="/auth" component={AuthPage} />}
+                {/* Always allow events page */}
                 <Route path="/events" component={EventsPage} />
-                <Route path="/bookings" component={BookingsPage} />
+                {/* Allow only if token is set */}
+                {this.state.token && <Redirect from="/" to="/events" exact />}
+                {this.state.token && <Redirect from="/auth" to="/events" exact />}
+                {this.state.token && <Route path="/bookings" component={BookingsPage} />}
               </Switch>
             </main>
           </AuthContext.Provider>
