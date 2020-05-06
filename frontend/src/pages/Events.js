@@ -7,7 +7,8 @@ import AuthContext from '../context/auth-context';
 
 class EventsPage extends Component {
   state = {
-    creating: false
+    creating: false,
+    events: []
   };
 
   static contextType = AuthContext;
@@ -18,6 +19,10 @@ class EventsPage extends Component {
     this.priceElRef = React.createRef();
     this.dateElRef = React.createRef();
     this.descriptionElRef = React.createRef();
+  }
+
+  componentDidMount() {
+    this.fetchEvents();
   }
 
   startCreateEventHandler = () => {
@@ -83,15 +88,8 @@ class EventsPage extends Component {
       return res.json();
     })
     .then(resData => {
-      // Set context with resData info if token is present
-      // if (resData.data.login.token) {
-      //   this.context.login(
-      //     resData.data.login.token,
-      //     resData.data.login.userId,
-      //     resData.data.login.tokenExpiration
-      //   );
-      // }
       console.log(resData);
+      this.fetchEvents();
     })
     .catch(err => {
       console.log(err);
@@ -103,7 +101,56 @@ class EventsPage extends Component {
     this.setState({ creating: false });
   };
 
+  fetchEvents() {
+    const requestBody = {
+      query: `
+        query {
+          events {
+            _id
+            title
+            description
+            date
+            price
+            creator {
+              _id
+              email
+            }
+          }
+        }
+      `
+    };
+
+    // const token = this.context.token;
+
+    fetch('http://localhost:8000/graphql', {
+      method: 'POST',
+      body: JSON.stringify(requestBody), 
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => {
+      if(res.status !== 200 & res.status !== 201) {
+        throw new Error('Failed!');
+      }
+      return res.json();
+    })
+    .then(resData => {
+      const events = resData.data.events;
+      this.setState({events: events});
+
+    })
+    .catch(err => {
+      console.log(err);
+    });
+  };
+  
+
   render() {
+    const eventList = this.state.events.map(event => {
+    return <li key={event._id} className="events__list-item">{event.title}</li>;
+    });
+
     return (
       <>
         {this.state.creating && <Backdrop />}
@@ -141,6 +188,9 @@ class EventsPage extends Component {
             <button className="btn" onClick={this.startCreateEventHandler}>Create Event</button>
           </div>
         )}
+        <ul className="events__list">
+          {eventList}
+        </ul>
       </>
       
     );
