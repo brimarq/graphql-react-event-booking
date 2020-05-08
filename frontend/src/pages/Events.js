@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import './Events.css';
 import Modal from '../components/Modal/Modal';
 import Backdrop from '../components/Backdrop/Backdrop';
+import EventList from '../components/Events/EventList/EventList';
 import AuthContext from '../context/auth-context';
 
 
@@ -120,8 +121,6 @@ class EventsPage extends Component {
       `
     };
 
-    // const token = this.context.token;
-
     fetch('http://localhost:8000/graphql', {
       method: 'POST',
       body: JSON.stringify(requestBody), 
@@ -147,9 +146,7 @@ class EventsPage extends Component {
   
 
   render() {
-    const eventList = this.state.events.map(event => {
-    return <li key={event._id} className="events__list-item">{event.title}</li>;
-    });
+    
 
     return (
       <>
@@ -188,9 +185,7 @@ class EventsPage extends Component {
             <button className="btn" onClick={this.startCreateEventHandler}>Create Event</button>
           </div>
         )}
-        <ul className="events__list">
-          {eventList}
-        </ul>
+        <EventList events={this.state.events} authUserId={this.context.userId}/>
       </>
       
     );
