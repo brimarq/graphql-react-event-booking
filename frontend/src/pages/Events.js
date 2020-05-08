@@ -63,10 +63,6 @@ class EventsPage extends Component {
             description
             date
             price
-            creator {
-              _id
-              email
-            }
           }
         }
       `
@@ -89,8 +85,20 @@ class EventsPage extends Component {
       return res.json();
     })
     .then(resData => {
-      console.log(resData);
-      this.fetchEvents();
+      this.setState(prevState => {
+        const updatedEvents = [...prevState.events];
+        updatedEvents.push({
+          _id: resData.data.createEvent._id,
+          title: resData.data.createEvent.title,
+          description: resData.data.createEvent.description,
+          date: resData.data.createEvent.date,
+          price: resData.data.createEvent.price,
+          creator: {
+            _id: this.context.userId
+          }
+        });
+        return {events: updatedEvents};
+      });
     })
     .catch(err => {
       console.log(err);
