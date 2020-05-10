@@ -1,6 +1,12 @@
+const DataLoader = require('dataloader');
 const Event = require('../../models/event');
 const User = require('../../models/user');
 const { dateToString } = require('../../helpers/date');
+
+
+const eventLoader = new DataLoader((eventIds) => {
+  return events(eventIds)
+});
 
 /** Max says this is a more flexible 'manual' population for db queries:
  * In addition to retrieving primitives, GraphQL can call functions in queries and 
@@ -23,7 +29,8 @@ const events = async eventIds => {
 
 const singleEvent = async eventId => {
   try {
-    const event = await Event.findById(eventId);
+    // const event = await Event.findById(eventId);
+    const event = await eventLoader.load(eventId);
     return transformEvent(event);
   } catch (err) {
     throw err;
@@ -33,7 +40,12 @@ const singleEvent = async eventId => {
 const user = async userId => {
   try {
     const user = await User.findById(userId);
-    return {...user._doc, createdEvents: events.bind(this, user._doc.createdEvents) };
+    return {
+      ...user._doc, 
+      // createdEvents: events.bind(this, user._doc.createdEvents) 
+      // this is wrong... will fix in next video. Should be () => eventLoader.loadMany(...)
+      createdEvents: eventLoader.load.bind(this, user._doc.createdEvents)
+    };
   } catch (err) {
     throw err;
   }
