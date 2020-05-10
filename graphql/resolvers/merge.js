@@ -3,9 +3,14 @@ const Event = require('../../models/event');
 const User = require('../../models/user');
 const { dateToString } = require('../../helpers/date');
 
+// Use dataloader to batch data requests for schema types with nested queries
 
 const eventLoader = new DataLoader((eventIds) => {
-  return events(eventIds)
+  return events(eventIds);
+});
+
+const userLoader = new DataLoader((userIds) => {
+  return User.find({ _id: { $in: userIds } });
 });
 
 /** Max says this is a more flexible 'manual' population for db queries:
@@ -29,9 +34,9 @@ const events = async eventIds => {
 
 const singleEvent = async eventId => {
   try {
-    // const event = await Event.findById(eventId);
-    const event = await eventLoader.load(eventId);
-    return transformEvent(event);
+    const event = await eventLoader.load(eventId.toString());
+    // No need to transformEvent here, eventloader already does that by calling events.
+    return event;
   } catch (err) {
     throw err;
   }
@@ -39,11 +44,9 @@ const singleEvent = async eventId => {
 
 const user = async userId => {
   try {
-    const user = await User.findById(userId);
+    const user = await userLoader.load(userId.toString());
     return {
       ...user._doc, 
-      // createdEvents: events.bind(this, user._doc.createdEvents) 
-      // this is wrong... will fix in next video. Should be () => eventLoader.loadMany(...)
       createdEvents: eventLoader.load.bind(this, user._doc.createdEvents)
     };
   } catch (err) {
