@@ -3,6 +3,7 @@ import Spinner from '../components/Spinner/Spinner';
 import AuthContext from '../context/auth-context';
 import BookingList from '../components/Bookings/BookingList/BookingList';
 import BookingsChart from '../components/Bookings/BookingsChart/BookingsChart';
+import BookingsControl from '../components/Bookings/BookingsControl/BookingsControl';
 
 
 class BookingsPage extends Component {
@@ -117,10 +118,7 @@ class BookingsPage extends Component {
     if (!this.state.isLoading) {
       content = (
         <>
-          <div>
-            <button onClick={this.changeOutputTypeHandler.bind(this, 'list')}>List</button>
-            <button onClick={this.changeOutputTypeHandler.bind(this, 'chart')}>Chart</button>
-          </div>
+          <BookingsControl activeOutputType={this.state.outputType} onChange={this.changeOutputTypeHandler}/>
           <div>
             {this.state.outputType === 'list' 
               ? <BookingList bookings={this.state.bookings} onDelete={this.deleteBookingHandler}/> 
