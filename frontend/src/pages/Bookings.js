@@ -133,12 +133,7 @@ class BookingsPage extends Component {
 
     return (
       <>
-        {/* {this.state.isLoading 
-          ? (<Spinner />) 
-          : (<BookingList bookings={this.state.bookings} onDelete={this.deleteBookingHandler}/>)
-        } */}
         {content}
-        
       </>
     );
   }
