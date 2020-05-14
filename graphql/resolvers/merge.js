@@ -26,7 +26,19 @@ const userLoader = new DataLoader((userIds) => {
 const events = async eventIds => {
   try {
     const events = await Event.find({ _id: { $in: eventIds } });
+    // dataloader needs the retrieved events sorted in the same order as eventIds ??
+    events.sort((a, b) => {
+      return (
+        eventIds.indexOf(a._id.toString()) - eventIds.indexOf(b._id.toString())
+      );
+    });
+
+    // check sort order:
+    // const retrievedIds = events.map(e => e._id.toString());
+    // console.log(retrievedIds, eventIds);
+
     return events.map(event => transformEvent(event));
+    
   } catch (err) {
     throw err;
   }
