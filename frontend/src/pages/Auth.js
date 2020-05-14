@@ -1,4 +1,4 @@
-import React, { Component, useState, useContext, useRef } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import './Auth.css';
 import AuthContext from '../context/auth-context';
 
