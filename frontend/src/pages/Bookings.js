@@ -130,11 +130,7 @@ class BookingsPage extends Component {
       );
     }
 
-    return (
-      <>
-        {content}
-      </>
-    );
+    return content;
   }
 }
 
