@@ -31,6 +31,7 @@ class BookingsPage extends Component {
               _id
               title
               date
+              price
             }
           }
         }
