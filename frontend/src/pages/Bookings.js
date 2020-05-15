@@ -1,26 +1,20 @@
-import React, { Component } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import Spinner from '../components/Spinner/Spinner';
 import AuthContext from '../context/auth-context';
 import BookingList from '../components/Bookings/BookingList/BookingList';
 import BookingsChart from '../components/Bookings/BookingsChart/BookingsChart';
 import BookingsControl from '../components/Bookings/BookingsControl/BookingsControl';
 
+function BookingsPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [bookings, setBookings] = useState([]);
+  const [outputType, setOutputType] = useState('list');
 
-class BookingsPage extends Component {
-  state = {
-    isLoading: false,
-    bookings: [],
-    outputType: 'list'
-  };
+  const auth = useContext(AuthContext);
 
-  static contextType = AuthContext;
-
-  componentDidMount() {
-    this.fetchBookings();
-  };
-
-  fetchBookings = () => {
-    this.setState({ isLoading: true })
+  // fetch the bookings
+  useEffect(() => {
+    setIsLoading(true);
     const requestBody = {
       query: `
         query {
@@ -43,7 +37,7 @@ class BookingsPage extends Component {
       body: JSON.stringify(requestBody), 
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.context.token}`
+        'Authorization': `Bearer ${auth.token}`
       }
     })
     .then(res => {
@@ -54,16 +48,17 @@ class BookingsPage extends Component {
     })
     .then(resData => {
       const bookings = resData.data.bookings;
-      this.setState({ bookings: bookings, isLoading: false });
+      setBookings(bookings);
+      setIsLoading(false);
     })
     .catch(err => {
       console.log(err);
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     });
-  };
+  }, [auth.token]);
 
-  deleteBookingHandler = bookingId => {
-    this.setState({ isLoading: true });
+  const deleteBookingHandler = bookingId => {
+    setIsLoading(true);
     const requestBody = {
       query: `
         mutation CancelBooking($id: ID!) {
@@ -83,7 +78,7 @@ class BookingsPage extends Component {
       body: JSON.stringify(requestBody), 
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.context.token}`
+        'Authorization': `Bearer ${auth.token}`
       }
     })
     .then(res => {
@@ -93,45 +88,44 @@ class BookingsPage extends Component {
       return res.json();
     })
     .then(resData => {
-      this.setState(prevState => { 
-        const updatedBookings = prevState.bookings.filter(booking => {
-          return booking._id !== bookingId;
-        });
-        return { bookings: updatedBookings, isLoading: false } 
+      const updatedBookings = bookings.filter(booking => {
+        return booking._id !== bookingId;
       });
+      setBookings(updatedBookings);
+      setIsLoading(false);
     })
     .catch(err => {
       console.log(err);
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     });
-  }
+  };
 
-  changeOutputTypeHandler = outputType => {
+  const changeOutputTypeHandler = outputType => {
     if (outputType === 'list') {
-      this.setState({ outputType: 'list' });
+      setOutputType('list');
     } else {
-      this.setState({ outputType: 'chart' });
+      setOutputType('chart');
     }
+  };
+
+  let content = <Spinner />;
+  if (!isLoading) {
+    content = (
+      <>
+        <BookingsControl activeOutputType={outputType} onChange={changeOutputTypeHandler}/>
+        <div>
+          {outputType === 'list' 
+            ? <BookingList bookings={bookings} onDelete={deleteBookingHandler}/> 
+            : <BookingsChart bookings={bookings}/>
+          }
+        </div>
+      </>
+    );
   }
 
-  render() {
-    let content = <Spinner />;
-    if (!this.state.isLoading) {
-      content = (
-        <>
-          <BookingsControl activeOutputType={this.state.outputType} onChange={this.changeOutputTypeHandler}/>
-          <div>
-            {this.state.outputType === 'list' 
-              ? <BookingList bookings={this.state.bookings} onDelete={this.deleteBookingHandler}/> 
-              : <BookingsChart bookings={this.state.bookings}/>
-            }
-          </div>
-        </>
-      );
-    }
-
-    return content;
-  }
+  return content;
 }
+
+
 
 export default BookingsPage;
